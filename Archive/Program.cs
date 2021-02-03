@@ -2,19 +2,19 @@
 using System.IO;
 using System.IO.Compression;
 
-
 namespace Archive
 {
-    class Program
+    internal class Program
     {
-        private static string _directoryPath = @"D:\archive\";
+        private static readonly string _directoryPath = @"D:\archive\";
         private static string _sourceFile = "";
         private static string _compressedFile = "";
         private static string _targetFile = "";
-        static void Main(string[] args)
+
+        private static void Main(string[] args)
         {
-            string compressMethod = "compress";
-            string decompressMethod = "decompress";
+            var compressMethod = "compress";
+            var decompressMethod = "decompress";
 
             if (args.Length == 3)
             {
@@ -23,8 +23,8 @@ namespace Archive
                 {
                     _sourceFile = args[1];
                     _compressedFile = args[2];
-                    FileInfo fileToCompress = new FileInfo(_directoryPath + _sourceFile);
-                    FileInfo fileCompressed = new FileInfo(_directoryPath + _compressedFile);
+                    var fileToCompress = new FileInfo(_directoryPath + _sourceFile);
+                    var fileCompressed = new FileInfo(_directoryPath + _compressedFile);
                     // создание сжатого файла
                     Compress(fileToCompress, fileCompressed);
                 }
@@ -33,8 +33,8 @@ namespace Archive
                 {
                     _compressedFile = args[1];
                     _targetFile = args[2];
-                    FileInfo fileCompressed = new FileInfo(_directoryPath + _compressedFile);
-                    FileInfo fileToDecompress = new FileInfo(_directoryPath + _targetFile);
+                    var fileCompressed = new FileInfo(_directoryPath + _compressedFile);
+                    var fileToDecompress = new FileInfo(_directoryPath + _targetFile);
                     // чтение из сжатого файла
                     Decompress(fileCompressed, fileToDecompress);
                 }
@@ -53,13 +53,13 @@ namespace Archive
             try
             {
                 // поток для чтения исходного файла
-                using (FileStream sourceStream = fileToCompress.OpenRead())
+                using (var sourceStream = fileToCompress.OpenRead())
                 {
                     // поток для записи сжатого файла
-                    using (FileStream targetStream = fileCompressed.Create())
+                    using (var targetStream = fileCompressed.Create())
                     {
                         // поток архивации
-                        using (GZipStream compressionStream = new GZipStream(targetStream, CompressionMode.Compress))
+                        using (var compressionStream = new GZipStream(targetStream, CompressionMode.Compress))
                         {
                             sourceStream.CopyTo(compressionStream); // копируем байты из одного потока в другой
                             Console.WriteLine(0);
@@ -72,7 +72,7 @@ namespace Archive
             }
             catch (Exception e) //when(!fileToCompress.Exists)
             {
-                Console.WriteLine($"Ошибка: { e.Message}");
+                Console.WriteLine($"Ошибка: {e.Message}");
                 Console.WriteLine(1);
             }
         }
@@ -82,13 +82,13 @@ namespace Archive
             try
             {
                 // поток для чтения из сжатого файла
-                using (FileStream sourceStream = fileCompressed.OpenRead())
+                using (var sourceStream = fileCompressed.OpenRead())
                 {
                     // поток для записи восстановленного файла
-                    using (FileStream targetStream = fileToDecompress.Create())
+                    using (var targetStream = fileToDecompress.Create())
                     {
                         // поток разархивации
-                        using (GZipStream decompressionStream = new GZipStream(sourceStream, CompressionMode.Decompress))
+                        using (var decompressionStream = new GZipStream(sourceStream, CompressionMode.Decompress))
                         {
                             decompressionStream.CopyTo(targetStream);
                             Console.WriteLine(0);
@@ -100,7 +100,7 @@ namespace Archive
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Ошибка: { e.Message}");
+                Console.WriteLine($"Ошибка: {e.Message}");
                 Console.WriteLine(1);
             }
         }
