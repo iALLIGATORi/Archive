@@ -6,19 +6,19 @@ using System.Threading;
 
 namespace Archive
 {
-    internal class Program
+    public class Program
     {
         
-        private static string directoryPath = @"D:\archive\";
-        private static string sourceFile = "";
-        private static string compressedFile = "";
-        private static string targetFile = "";
-        private static FileInfo fileToCompress;
-        private static FileInfo fileCompressed;
-        private static FileInfo fileToDecompress;
-        private static Thread openReadThread;
-        private static Thread createFileThread;
-        private static Thread compressionFileThread;
+        public static string directoryPath = @"D:\archive\";
+        public static string sourceFile = "";
+        public static string compressedFile = "";
+        public static string targetFile = "";
+        public static FileInfo fileToCompress;
+        public static FileInfo fileCompressed;
+        public static FileInfo fileToDecompress;
+        public static Thread openReadThread;
+        public static Thread createFileThread;
+        public static Thread decompressThread;
         private static void Main(string[] args)
         {
             var compressMethod = "compress";
@@ -28,7 +28,8 @@ namespace Archive
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
 
-
+            //Queue.QueueReading();
+            //Queue.QueueWriting();
             if (args.Length == 3)
             {
                 if (args[0] == compressMethod)
@@ -41,14 +42,19 @@ namespace Archive
                     fileToCompress = new FileInfo(directoryPath + sourceFile);
                     fileCompressed = new FileInfo(directoryPath + compressedFile);
 
-                    openReadThread = new Thread(Compress.OpenReadToCompress);
+                    openReadThread = new Thread(Compress.Reading);
                     openReadThread.Start();
 
-                    createFileThread = new Thread(Compress.CreateFileCompressed);
+                    createFileThread = new Thread(Compress.Compressed);
                     createFileThread.Start();
 
-                    compressionFileThread = new Thread(Compress.Compression);
-                    compressionFileThread.Start();
+
+                    //compressionFileThread = new Thread(Compress.CopyTo);
+                    //compressionFileThread.Start();
+
+                    //Compress.CopyTo();
+                    //Compress.Reading();
+                    //Compress.Writing();
 
 
 
@@ -98,7 +104,7 @@ namespace Archive
                     fileCompressed = new FileInfo(directoryPath + compressedFile);
                     fileToDecompress = new FileInfo(directoryPath + targetFile);
 
-                    Thread decompressThread = new Thread(Decompress);
+                    decompressThread = new Thread(Decompress.Decompressed);
                     decompressThread.Start();
 
                 }
@@ -107,7 +113,10 @@ namespace Archive
                     throw new ArgumentException("Ввод недопустимых аргументов");
                 }
             }
+
+            createFileThread.Join();
             openReadThread.Join();
+            //decompressThread.Join();
             stopWatch.Stop();
             // Get the elapsed time as a TimeSpan value.
             TimeSpan ts = stopWatch.Elapsed;
@@ -118,71 +127,17 @@ namespace Archive
                 ts.Milliseconds / 10);
             Console.WriteLine("RunTime " + elapsedTime);
 
+            //if (fileToCompress.Length != fileCompressed.Length)
+            //{
+            //    throw new ArgumentException(Program.fileToCompress + " был полностью записан");
+            //}
             Console.WriteLine("Для завершения нажмите любую клавишуууууууу");
             Console.ReadLine();
         }
 
-        public static class Compress
-        {
-            public static FileStream sourceStream = fileToCompress.OpenRead();
-            public static FileStream targetStream = fileCompressed.Create();
-            public static GZipStream compressionStream = new GZipStream(targetStream, CompressionMode.Compress);
-            public static void OpenReadToCompress()
-            {
-                using (sourceStream)
-                {
-                    if (fileToCompress.Extension != ".gz")
-                    {
-                        createFileThread.Join();
-                    }
-                    else
-                    {
-                        throw new ArgumentException(fileToCompress + " уже является сжатым файлом");
-                    }
-                }
-            }
-            public static void CreateFileCompressed()
-            {
-                //Thread.Sleep(500);
-                using (targetStream)
-                {
-                    compressionFileThread.Join();
-                }
-            }
-            public static void Compression()
-            {
-                using (compressionStream)
-                {
-                    sourceStream.CopyTo(compressionStream);
-                    Console.WriteLine(0);
-                    Console.WriteLine("Для завершения нажмите любую клавишу");
-                   // Console.ReadLine();
-                }
-            }
-        }
 
 
-        public static void Decompress()
-        {
-            try
-            {
-                using (var sourceStream = fileCompressed.OpenRead())
-                {
-                    using (var targetStream = fileToDecompress.Create())
-                    {
-                        using (var decompressionStream = new GZipStream(sourceStream, CompressionMode.Decompress))
-                        {
-                            decompressionStream.CopyTo(targetStream);
-                            Console.WriteLine(0);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка: {ex.Message}");
-                Console.WriteLine(1);
-            }
-        }
+
+
     }
 }
