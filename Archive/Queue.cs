@@ -7,12 +7,6 @@ namespace Archive
 {
     public class Queue
     {
-        public static FileStream fs2 = new FileStream("C:\\archive\\queue.txt", FileMode.Open);
-        public static FileStream fsw2 = new FileStream("C:\\archive\\queueResult.txt", FileMode.Create);
-
-        public static FileStream fs1 = new FileStream("C:\\archive\\text20gb.txt", FileMode.Open);
-        public static FileStream fsw1 = new FileStream("C:\\archive\\text20gbResult.txt", FileMode.Create);
-
         public static FileStream fs = new FileStream("C:\\archive\\testvideo.mp4", FileMode.Open);
         public static FileStream fsw = new FileStream("C:\\archive\\testvideoResult.mp4", FileMode.Create);
 
