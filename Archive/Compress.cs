@@ -7,44 +7,48 @@ using System.Threading;
 
 namespace Archive
 {
-    public class Compress
+    internal class Compress
     {
-        public static FileStream sourceStream = Program.fileToCompress.OpenRead();
-        public static FileStream targetStream = Program.fileCompressed.Create();
-        public static GZipStream compressionStream = new GZipStream(targetStream, CompressionMode.Compress);
         public static ConcurrentQueue<int> QueueCount = new ConcurrentQueue<int>();
         public static ConcurrentQueue<byte[]> QueueBuffer = new ConcurrentQueue<byte[]>();
-        public static AutoResetEvent WaitHandler = new AutoResetEvent(false);
 
         public static void Reading()
         {
-            using (sourceStream)
+            using (FileStream sourceStream = Program.fileToCompress.OpenRead())
             {
                 if (Program.fileToCompress.Extension != ".gz")
                 {
-                    if (QueueCount.IsEmpty & QueueBuffer.IsEmpty)
+                    try
                     {
-                        var bufferSize = 81920;
-                        var buffer = new byte[bufferSize];
-                        WaitHandler.Set();
-                        while (true)
+                        if (QueueCount.IsEmpty & QueueBuffer.IsEmpty)
                         {
-                            var readBuffer = sourceStream.Read(buffer, 0, buffer.Length);
-                            if (readBuffer == 0)
+                            var bufferSize = 81920;
+                            var buffer = new byte[bufferSize];
+                            //WaitHandler.Set();
+                            while (true)
                             {
-                                break;
-                            }
+                                //Thread.Sleep(10);
+                                var readBuffer = sourceStream.Read(buffer, 0, buffer.Length);
+                                if (readBuffer == 0)
+                                {
+                                    break;
+                                }
 
-                            var item = buffer.ToArray();
-                            QueueCount.Enqueue(readBuffer);
-                            QueueBuffer.Enqueue(item);
+                                var item = buffer.ToArray();
+                                QueueCount.Enqueue(readBuffer);
+                                QueueBuffer.Enqueue(item);
 
-                            if (QueueBuffer.Count >= 5000)
-                            {
-                                WaitHandler.Reset();
-                                WaitHandler.WaitOne();
+                                //if (QueueBuffer.Count >= 5000)
+                                //{
+                                //    Thread.Sleep(1000);
+                                //}
                             }
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Ошибка: {ex.Message}");
+                        Console.WriteLine(1);
                     }
                 }
                 else
@@ -57,84 +61,63 @@ namespace Archive
             Program.readingThread.Abort();
         }
 
-        //public static void Writing()
-        //{
-        //    Program.openReadThread.Join();
-        //    //waitHandler.WaitOne();
-        //    Thread.Sleep(1000);
-        //    using (targetStream)
-        //    {
-        //        if (!queueCount.IsEmpty | !queueBuffer.IsEmpty)
-        //        {
-        //            while (!queueCount.IsEmpty | !queueBuffer.IsEmpty) // рабочая запись
-        //            {
-        //                queueCount.TryDequeue(out var writeCount);
-        //                queueBuffer.TryDequeue(out var writeBuffer);
-        //                targetStream.Write(writeBuffer, 0, writeCount);
-        //            }
-        //        }
-        //    }
-        //}
-
         public static void Compressed()
         {
-            WaitHandler.WaitOne();
             Thread.Sleep(300);
-            using (compressionStream)
+            using (FileStream targetStream = Program.fileCompressed.Create())
             {
-                if (!QueueCount.IsEmpty & !QueueBuffer.IsEmpty)
+                using (GZipStream compressionStream = new GZipStream(targetStream, CompressionMode.Compress))
                 {
-                    while (!QueueCount.IsEmpty & !QueueBuffer.IsEmpty)
+                    try
                     {
-                        QueueCount.TryDequeue(out var result);
-                        QueueBuffer.TryDequeue(out var resultByte);
-                        compressionStream.Write(resultByte, 0, result);
-
-                        if (Program.readingThread.IsAlive & (QueueBuffer.Count <= 2500))
+                        if (!QueueCount.IsEmpty & !QueueBuffer.IsEmpty)
                         {
-                            WaitHandler.Set();
-                            Thread.Sleep(300);
+                            while (!QueueCount.IsEmpty & !QueueBuffer.IsEmpty)
+                            {
+                                QueueCount.TryDequeue(out var result);
+                                QueueBuffer.TryDequeue(out var resultByte);
+                                compressionStream.Write(resultByte, 0, result);
+                            }
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Ошибка: {ex.Message}");
+                        Console.WriteLine(1);
                     }
                 }
             }
-
-            WaitHandler.Close();
-            Program.compressedThead.Abort();
+            Program.compressionThread.Abort();
         }
-
-        //public static void OpenReadToCompress()
+        //public static void Wait()
         //{
-        //    using (sourceStream)
+        //    WaitHandler.WaitOne();
+
+        //    Program.compressionThread.Interrupt();
+        //    Program.waitThread.Start();
+
+        //    while (true)
         //    {
-        //        if (Program.fileToCompress.Extension != ".gz")
+        //        if (QueueBuffer.Count >= 5000)
         //        {
-        //            Program.createFileThread.Join();
+        //            WaitHandler.Reset();
+        //            //WaitHandler.WaitOne();
+        //            Program.readingThread.
+        //        }
+        //        else if (Program.readingThread.IsAlive & (QueueBuffer.Count <= 2500))
+        //        {
+        //            WaitHandler.Set();
+        //            //Thread.Sleep(300);
         //        }
         //        else
         //        {
-        //            throw new ArgumentException(Program.fileToCompress + " уже является сжатым файлом");
+        //            WaitHandler.Close();
+        //            break;
         //        }
         //    }
-        //}
-        //public static void CreateFileCompressed()
-        //{
-        //    //Thread.Sleep(500);
-        //    using (targetStream)
-        //    {
-        //        Program.compressionFileThread.Join();
-        //    }
-        //}
-        //public static void Compression()
-        //{
-        //    using (compressionStream)
-        //    {
-        //        sourceStream.CopyTo(compressionStream);
-        //        Console.WriteLine(0);
-        //        Console.WriteLine("Для завершения нажмите любую клавишу");
-        //        // Console.ReadLine();
-        //    }
-        //}
+        //    Program.waitThread.Abort();
         //}
     }
+
+
 }
