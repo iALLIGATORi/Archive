@@ -1,4 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -7,49 +9,42 @@ namespace Archive
 {
     public class Queue
     {
-        public static FileStream fs = new FileStream("C:\\archive\\text20gb.txt", FileMode.Open);
-        public static FileStream fsw = new FileStream("C:\\archive\\text20gbnew.txt", FileMode.Create);
+        public static FileStream fs = new FileStream("C:\\archive\\testvideo.mp4", FileMode.Open);
+        public static FileStream fsw = new FileStream("C:\\archive\\testvideonew.mp4", FileMode.Create);
+
+        //public static FileStream fs = new FileStream("C:\\archive\\text20gb.txt", FileMode.Open);
+        //public static FileStream fsw = new FileStream("C:\\archive\\text20gbnew.txt", FileMode.Create);
 
         public static ConcurrentQueue<(int, byte[])> QueueCompress = new ConcurrentQueue<(int, byte[])>();
-        //public static AutoResetEvent WaitHandler = new AutoResetEvent(false);
-        static object locker = new object();
+        private static AutoResetEvent are = new AutoResetEvent(false);
+        private static AutoResetEvent are2 = new AutoResetEvent(true);
 
-        public static (int, byte[]) QueueCounter(int count, byte[] bytes)
-        {
-            (int, byte[]) item = (count, bytes);
-            QueueCompress.Enqueue(item);
-
-            return item;
-
-        }
 
         public static void QueueReading()
         {
             using (fs)
             {
-                if (QueueCompress.IsEmpty)
+                try
                 {
                     var bufferSize = 81920;
                     var buffer = new byte[bufferSize];
-                    //WaitHandler.Set();
                     while (true)
                     {
-                        //Thread.Sleep(1);
                         var readBuffer = fs.Read(buffer, 0, buffer.Length);
                         if (readBuffer == 0)
                         {
                             break;
                         }
-
                         var item = buffer.ToArray();
                         QueueCompress.Enqueue((readBuffer, item));
-
-                        //if (QueueBuffer.Count >= 5000)
-                        //{
-                        //    WaitHandler.Reset();
-                        //    WaitHandler.WaitOne();
-                        //}
+                        are.Set();
+                        are2.WaitOne(1000);
                     }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка: {ex.Message}");
+                    //return 1;
                 }
                 Program.readingThread.Abort();
             }
@@ -57,30 +52,24 @@ namespace Archive
 
         public static void QueueWriting()
         {
-            //WaitHandler.WaitOne();
-            Thread.Sleep(500);
+            are.WaitOne(-1);
             using (fsw)
             {
-                if (!QueueCompress.IsEmpty)
+                try
                 {
                     while (!QueueCompress.IsEmpty)
                     {
-                        //foreach (var bytes in QueueBuffer)
-                        //{
-                        //    foreach (var count in QueueCount)
-                        //    {
-                        //        fsw.Write(bytes, 0, count);
-                        //    }
-                        //}
+                        are.WaitOne(1000);
                         QueueCompress.TryDequeue(out var resultCom);
+                        //QueueCompress.TryDequeue(out var resultCom);
                         fsw.Write(resultCom.Item2, 0, resultCom.Item1);
-
-                        //if (Program.readingThread.IsAlive & (QueueBuffer.Count <= 2500))
-                        //{
-                        //    WaitHandler.Set();
-                        //    Thread.Sleep(500);
-                        //}
+                        are2.Set();
                     }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка: {ex.Message}");
+                    //return 1;
                 }
             }
             Program.compressionThread.Abort();

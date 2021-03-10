@@ -38,18 +38,24 @@ namespace Archive
                     fileToCompress = new FileInfo(directoryPath + sourceFile);
                     fileCompressed = new FileInfo(directoryPath + compressedFile);
 
-                    //readingThread = new Thread(Compress.Reading);
+
+                    readingThread = new Thread(Compress.Reading);
                     //readingThread.Start();
 
-                    //compressionThread = new Thread(Compress.Compressed);
+                    compressionThread = new Thread(Compress.Compressed);
                     //compressionThread.Start();
+                    //object value = null;
+                    //readingThread = new Thread(Queue.QueueReading);
+                    //readingThread = new Thread(() => { value = Compress.Reading(); });
 
-                    readingThread = new Thread(Queue.QueueReading);
                     readingThread.Start();
 
-                    compressionThread = new Thread(Queue.QueueWriting);
+                    //compressionThread = new Thread(Queue.QueueWriting);
+                    //compressionThread = new Thread(() => { value = Compress.Compressed(); });
                     compressionThread.Start();
 
+                    readingThread.Join();
+                    compressionThread.Join();
 
                 }
                 else if (args[0] == decompressMethod)
@@ -75,10 +81,11 @@ namespace Archive
                 }
             }
 
+            //if (Compress.Compressed() == 1)
+            //{
+            //    Console.WriteLine("Поздравляю, все работает");
+            //}
 
-            readingThread.Join();
-            //waitThread.Join();
-            compressionThread.Join();
             stopWatch.Stop();
             // Get the elapsed time as a TimeSpan value.
             var ts = stopWatch.Elapsed;
