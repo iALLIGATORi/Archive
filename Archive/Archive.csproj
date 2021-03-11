@@ -59,6 +59,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Close.cs" />
     <Compile Include="Compress.cs" />
     <Compile Include="Decompress.cs" />
     <Compile Include="Program.cs" />

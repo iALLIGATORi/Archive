@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -9,20 +8,20 @@ namespace Archive
 {
     public class Queue
     {
-        public static FileStream fs = new FileStream("C:\\archive\\testvideo.mp4", FileMode.Open);
-        public static FileStream fsw = new FileStream("C:\\archive\\testvideonew.mp4", FileMode.Create);
+        public static FileStream Fs = new FileStream("C:\\archive\\testvideo.mp4", FileMode.Open);
+        public static FileStream Fsw = new FileStream("C:\\archive\\testvideonew.mp4", FileMode.Create);
 
         //public static FileStream fs = new FileStream("C:\\archive\\text20gb.txt", FileMode.Open);
         //public static FileStream fsw = new FileStream("C:\\archive\\text20gbnew.txt", FileMode.Create);
 
         public static ConcurrentQueue<(int, byte[])> QueueCompress = new ConcurrentQueue<(int, byte[])>();
-        private static AutoResetEvent are = new AutoResetEvent(false);
-        private static AutoResetEvent are2 = new AutoResetEvent(true);
+        private static readonly AutoResetEvent are = new AutoResetEvent(false);
+        private static readonly AutoResetEvent are2 = new AutoResetEvent(true);
 
 
         public static void QueueReading()
         {
-            using (fs)
+            using (Fs)
             {
                 try
                 {
@@ -30,11 +29,12 @@ namespace Archive
                     var buffer = new byte[bufferSize];
                     while (true)
                     {
-                        var readBuffer = fs.Read(buffer, 0, buffer.Length);
+                        var readBuffer = Fs.Read(buffer, 0, buffer.Length);
                         if (readBuffer == 0)
                         {
                             break;
                         }
+
                         var item = buffer.ToArray();
                         QueueCompress.Enqueue((readBuffer, item));
                         are.Set();
@@ -46,14 +46,15 @@ namespace Archive
                     Console.WriteLine($"Ошибка: {ex.Message}");
                     //return 1;
                 }
-                Program.readingThread.Abort();
+
+                Program.ReadingThread.Abort();
             }
         }
 
         public static void QueueWriting()
         {
             are.WaitOne(-1);
-            using (fsw)
+            using (Fsw)
             {
                 try
                 {
@@ -62,7 +63,7 @@ namespace Archive
                         are.WaitOne(1000);
                         QueueCompress.TryDequeue(out var resultCom);
                         //QueueCompress.TryDequeue(out var resultCom);
-                        fsw.Write(resultCom.Item2, 0, resultCom.Item1);
+                        Fsw.Write(resultCom.Item2, 0, resultCom.Item1);
                         are2.Set();
                     }
                 }
@@ -72,7 +73,8 @@ namespace Archive
                     //return 1;
                 }
             }
-            Program.compressionThread.Abort();
+
+            Program.CompressionThread.Abort();
         }
     }
 }
